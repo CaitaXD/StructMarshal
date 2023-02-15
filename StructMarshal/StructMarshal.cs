@@ -5,7 +5,7 @@ namespace Struct;
 public static class StructMarshal
 {
     /// <summary>
-    /// Convertion betwen a struct and a span of bytes
+    /// Reinterprets the given Struct as a Span of bytes.
     /// </summary>
     /// <typeparam name="TStruct"></typeparam>
     /// <param name="value"></param>
@@ -13,11 +13,12 @@ public static class StructMarshal
     public static Span<byte> AsBytes<TStruct>(ref TStruct value)
         where TStruct : struct
     {
-        return MemoryMarshal.Cast<TStruct, byte>(MemoryMarshal.CreateSpan(ref value, 1));
+        var span = MemoryMarshal.CreateSpan(ref value, 1);
+        return MemoryMarshal.Cast<TStruct, byte>(span);
     }
     /// <summary>
     /// <code>
-    /// Copies the contents of a struct to another struct.
+    /// Copies a struct reinterpreted as another
     /// If the final struct is larger than the initial one, the remaining bytes are set to zero.
     /// </code>
     /// </summary>
@@ -41,7 +42,7 @@ public static class StructMarshal
     }
     /// <summary>
     /// <code>
-    /// Copies the contents of a Span structs to a struct.
+    /// Copies a span of structs reinterpreted as another struct
     /// If the final struct is larger than the size of the initial span, the remaining bytes are set to zero.
     /// </code>
     /// </summary>
@@ -70,7 +71,7 @@ public static class StructMarshal
     }
     /// <summary>
     /// <code>
-    /// Reinterpret Cast of a struct to another,
+    /// Reinterpret Cast of a struct to another struct,
     /// The size of the final struct must be lesser or equal to that of the initial one
     /// </code>
     /// </summary>
@@ -108,7 +109,49 @@ public static class StructMarshal
             ref var value = ref MemoryMarshal.GetReference(span);
             return ref Unsafe.As<TFrom, TTo>(ref value);
         }
-        throw new InvalidCastException("Cannot cast to a larger struct");
+        throw new InvalidCastException("Casting to a larger struct, would cause an out of bounds access");
+    }
+    /// <summary>
+    /// Reinterpret Cast of a struct to a span of another struct
+    /// </summary>
+    /// <typeparam name="TStruct"></typeparam>
+    /// <typeparam name="TTo"></typeparam>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public static Span<TTo> AsSpan<TStruct, TTo>(ref TStruct value)
+    where TStruct : struct
+    where TTo : struct
+    {
+        var span = MemoryMarshal.CreateSpan(ref value, 1);
+        return MemoryMarshal.Cast<TStruct, TTo>(span);
+    }
+    /// <summary>
+    /// Reinterpret Cast of a struct to a span of another struct
+    /// </summary>
+    /// <typeparam name="TStruct"></typeparam>
+    /// <typeparam name="TTo"></typeparam>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public static Span<TTo> AsSpan<TStruct, TTo>(ref TStruct value, int length)
+    where TStruct : struct
+    where TTo : struct
+    {
+        var span = MemoryMarshal.CreateSpan(ref value, 1);
+        return MemoryMarshal.Cast<TStruct, TTo>(span).Slice(0, length);
+    }
+    /// <summary>
+    /// Reinterpret Cast of a struct to a span of another struct
+    /// </summary>
+    /// <typeparam name="TStruct"></typeparam>
+    /// <typeparam name="TTo"></typeparam>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public static Span<TTo> AsSpan<TStruct, TTo>(ref TStruct value, int start, int lenght)
+    where TStruct : struct
+    where TTo : struct
+    {
+        var span = MemoryMarshal.CreateSpan(ref value, 1);
+        return MemoryMarshal.Cast<TStruct, TTo>(span).Slice(start, lenght);
     }
 }
 
