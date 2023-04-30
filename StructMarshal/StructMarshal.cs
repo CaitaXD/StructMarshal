@@ -84,7 +84,7 @@ public static class StructMarshal
         where TFrom : struct
         where TTo : struct
     {
-        if (Unsafe.SizeOf<TTo>() >= Unsafe.SizeOf<TFrom>())
+        if (Unsafe.SizeOf<TTo>() > Unsafe.SizeOf<TFrom>())
             throw new InvalidCastException("Cannot cast to a larger struct");
 
         return ref Unsafe.As<TFrom, TTo>(ref reference);
@@ -104,7 +104,7 @@ public static class StructMarshal
         where TFrom : struct
         where TTo : struct
     {
-        if (Unsafe.SizeOf<TTo>() >= span.Length * Unsafe.SizeOf<TFrom>())
+        if (Unsafe.SizeOf<TTo>() > span.Length * Unsafe.SizeOf<TFrom>())
             throw new InvalidCastException("Cannot cast to a larger struct");
 
         var bytes = MemoryMarshal.AsBytes(span);
@@ -158,6 +158,16 @@ public static class StructMarshal
         var span = MemoryMarshal.CreateSpan(ref value, 1);
         return MemoryMarshal.Cast<TStruct, TTo>(span).Slice(start, lenght);
     }
+
+    public static unsafe TTo* AsPointer<TFrom, TTo>(ref TFrom from)
+    where TTo : unmanaged
+    where TFrom : struct
+    {
+        if (Unsafe.SizeOf<TTo>() > Unsafe.SizeOf<TFrom>())
+            throw new InvalidCastException();
+
+        return (TTo*)Unsafe.AsPointer(ref from);
+    }
 }
 
 [PublicAPI]
@@ -174,7 +184,7 @@ public ref struct ReinterpretCastDecorator<TStruct>
     public ref    TTo        AsRef<TTo>() where TTo : struct => ref StructMarshal.Cast<TStruct, TTo>(ref _reference);
     public        Span<TTo>  AsSpan<TTo>() where TTo : struct => StructMarshal.AsSpan<TStruct, TTo>(ref _reference);
     public        TTo        As<TTo>() where TTo : struct => StructMarshal.Read<TStruct, TTo>(ref _reference);
-    public unsafe TTo*       AsPointer<TTo>() where TTo : unmanaged => (TTo*)Unsafe.AsPointer(ref _reference);
+    public unsafe TTo*       AsPointer<TTo>() where TTo : unmanaged => StructMarshal.AsPointer<TStruct,TTo>(ref _reference);
     public unsafe void*      Pointer => Unsafe.AsPointer(ref _reference);
     public        Span<byte> AsBytes => StructMarshal.AsBytes(ref _reference);
 }

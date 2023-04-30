@@ -100,14 +100,15 @@ namespace StructMarshalTests
             Assert.Throws<NullReferenceException>(() => new ReinterpretCastDecorator<Vector2>().As<Vector4>());
 
             var v2 = new Vector2(1, 2);
-            var v4 = Reinterpret.Cast(v2).As<Vector4>();
 
             Assert.Throws<InvalidCastException>(() => Reinterpret.Cast(v2).AsRef<Vector4>());
-            Assert.That(Reinterpret.Cast(v2).AsPointer<Vector4>()->Equals(new Vector4(1, 2, 0, 0)));
+            Assert.Throws<InvalidCastException>(() => Reinterpret.Cast(v2).AsPointer<Vector4>());
             Assert.DoesNotThrow(() => Reinterpret.Cast(v2).AsSpan<Vector4>().ToArray());
             Assert.That(Reinterpret.Cast(v2).AsSpan<Vector4>().ToArray(), Has.Length.EqualTo(0));
 
-            Assert.That(v2.X.Equals(v4.X) && v2.Y.Equals(v4.Y) && v4.W.Equals(0) && v4.Z.Equals(0));
+            Assert.That(Reinterpret.Cast(v2).As<Vector4>().Equals(new Vector4(1,2,0,0)));
+            Assert.That(Reinterpret.Cast(v2).AsPointer<float>()->Equals(1));
+            Assert.That(Reinterpret.Cast(v2).AsRef<float>().Equals(1));
         }
     }
 }
