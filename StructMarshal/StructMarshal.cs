@@ -161,17 +161,12 @@ public static class StructMarshal
 }
 
 [PublicAPI]
-public ref struct ReinterpretCastExpression<TStruct>
+public ref struct ReinterpretCastDecorator<TStruct>
     where TStruct : struct
 {
-    public ReinterpretCastExpression(in TStruct self)
+    public ReinterpretCastDecorator(in TStruct self)
     {
         _reference = ref Unsafe.AsRef(self);
-    }
-
-    public ReinterpretCastExpression()
-    {
-        _reference = Unsafe.NullRef<TStruct>();
     }
 
     ref TStruct _reference;
@@ -179,15 +174,16 @@ public ref struct ReinterpretCastExpression<TStruct>
     public ref    TTo        AsRef<TTo>() where TTo : struct => ref StructMarshal.Cast<TStruct, TTo>(ref _reference);
     public        Span<TTo>  AsSpan<TTo>() where TTo : struct => StructMarshal.AsSpan<TStruct, TTo>(ref _reference);
     public        TTo        As<TTo>() where TTo : struct => StructMarshal.Read<TStruct, TTo>(ref _reference);
-    public unsafe void*      AsPointer => Unsafe.AsPointer(ref _reference);
+    public unsafe TTo*       AsPointer<TTo>() where TTo : unmanaged => (TTo*)Unsafe.AsPointer(ref _reference);
+    public unsafe void*      Pointer => Unsafe.AsPointer(ref _reference);
     public        Span<byte> AsBytes => StructMarshal.AsBytes(ref _reference);
 }
 
 public static class Reinterpret
 {
-    public static ReinterpretCastExpression<TStruct> Cast<TStruct>(in TStruct structure)
+    public static ReinterpretCastDecorator<TStruct> Cast<TStruct>(in TStruct structure)
         where TStruct : unmanaged
     {
-        return new ReinterpretCastExpression<TStruct>(structure);
+        return new ReinterpretCastDecorator<TStruct>(structure);
     }
 }

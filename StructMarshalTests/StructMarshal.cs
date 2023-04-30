@@ -32,9 +32,11 @@ namespace StructMarshalTests
             Span<float> floats = stackalloc float[] { 1, 2 };
             v4 = StructMarshal.StructMarshal.Read<float, Vector4>(floats);
 
-            Assert.That(Unsafe.AreSame(ref Unsafe.As<float, Vector4>(ref MemoryMarshal.GetReference(floats)), ref v4), Is.False);
+            Assert.That(Unsafe.AreSame(ref Unsafe.As<float, Vector4>(ref MemoryMarshal.GetReference(floats)), ref v4),
+                Is.False);
             Assert.That(v4, Is.EqualTo(new Vector4(1, 2, 0, 0)));
         }
+
         [Test]
         public void Read_To_Smaller_Struct()
         {
@@ -48,9 +50,11 @@ namespace StructMarshalTests
             Span<float> floats = stackalloc float[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
             v2 = StructMarshal.StructMarshal.Read<float, Vector2>(floats);
 
-            Assert.That(Unsafe.AreSame(ref Unsafe.As<float, Vector2>(ref MemoryMarshal.GetReference(floats)), ref v2), Is.False);
+            Assert.That(Unsafe.AreSame(ref Unsafe.As<float, Vector2>(ref MemoryMarshal.GetReference(floats)), ref v2),
+                Is.False);
             Assert.That(v2, Is.EqualTo(new Vector2(1, 2)));
         }
+
         [Test]
         public void Cast_To_Smaller_Struct()
         {
@@ -68,6 +72,7 @@ namespace StructMarshalTests
             Assert.That(Unsafe.AreSame(ref Unsafe.As<float, Vector2>(ref MemoryMarshal.GetReference(floats)), ref v2));
             Assert.That(v2, Is.EqualTo(new Vector2(1, 2)));
         }
+
         [Test]
         public void Cast_To_Larger_Struct()
         {
@@ -79,23 +84,30 @@ namespace StructMarshalTests
 
             Span<float> floats = stackalloc float[] { 1, 2 };
 
-            try
-            {
+            try {
                 StructMarshal.StructMarshal.Cast<float, Vector4>(floats);
             }
-            catch (InvalidCastException)
-            {
+            catch (InvalidCastException) {
                 Assert.Pass();
             }
+
             Assert.Fail();
         }
 
         [Test]
         public unsafe void Syntax_Sugar()
         {
-            var v4 = new Vector4(1, 2, 3, 4);
+            Assert.Throws<NullReferenceException>(() => new ReinterpretCastDecorator<Vector2>().As<Vector4>());
 
-            var v2 = Reinterpret.Cast(v4).As<Vector2>();
+            var v2 = new Vector2(1, 2);
+            var v4 = Reinterpret.Cast(v2).As<Vector4>();
+
+            Assert.Throws<InvalidCastException>(() => Reinterpret.Cast(v2).AsRef<Vector4>());
+            Assert.That(Reinterpret.Cast(v2).AsPointer<Vector4>()->Equals(new Vector4(1, 2, 0, 0)));
+            Assert.DoesNotThrow(() => Reinterpret.Cast(v2).AsSpan<Vector4>().ToArray());
+            Assert.That(Reinterpret.Cast(v2).AsSpan<Vector4>().ToArray(), Has.Length.EqualTo(0));
+
+            Assert.That(v2.X.Equals(v4.X) && v2.Y.Equals(v4.Y) && v4.W.Equals(0) && v4.Z.Equals(0));
         }
     }
 }
