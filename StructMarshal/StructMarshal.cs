@@ -1,7 +1,9 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using JetBrains.Annotations;
 
-namespace Struct;
+namespace StructMarshal;
+
 public static class StructMarshal
 {
     /// <summary>
@@ -16,6 +18,7 @@ public static class StructMarshal
         var span = MemoryMarshal.CreateSpan(ref value, 1);
         return MemoryMarshal.Cast<TStruct, byte>(span);
     }
+
     /// <summary>
     /// <code>
     /// Copies a struct reinterpreted as another
@@ -27,19 +30,20 @@ public static class StructMarshal
     /// <param name="value"></param>
     /// <returns></returns>
     public static TTo Read<TStruct, TTo>(ref TStruct value)
-    where TStruct : struct
-    where TTo : struct
+        where TStruct : struct
+        where TTo : struct
     {
-        if (Unsafe.SizeOf<TStruct>() >= Unsafe.SizeOf<TTo>())
-        {
-            return Unsafe.As<TStruct, TTo>(ref value);
+        var bytes = AsBytes(ref value);
+
+        if (MemoryMarshal.TryRead<TTo>(bytes, out var ret)) {
+            return ret;
         }
-        Span<byte> new_block = stackalloc byte[Unsafe.SizeOf<TTo>()];
-        var as_span = MemoryMarshal.CreateReadOnlySpan(ref value, 1);
-        var old_block = MemoryMarshal.AsBytes(as_span);
-        old_block.CopyTo(new_block);
-        return MemoryMarshal.Read<TTo>(new_block);
+
+        Span<byte> new_span = stackalloc byte[Unsafe.SizeOf<TTo>()];
+        bytes.CopyTo(new_span);
+        return MemoryMarshal.Read<TTo>(new_span);
     }
+
     /// <summary>
     /// <code>
     /// Copies a span of structs reinterpreted as another struct
@@ -51,66 +55,62 @@ public static class StructMarshal
     /// <param name="span"></param>
     /// <returns></returns>
     public static TTo Read<TStruct, TTo>(Span<TStruct> span)
-    where TStruct : struct
-    where TTo : struct
+        where TStruct : struct
+        where TTo : struct
     {
-        if (span.Length * Unsafe.SizeOf<TStruct>() >= Unsafe.SizeOf<TTo>())
-        {
-            ref var value = ref MemoryMarshal.GetReference(span);
-            return Unsafe.As<TStruct, TTo>(ref value);
+        var bytes = MemoryMarshal.AsBytes(span);
+
+        if (MemoryMarshal.TryRead<TTo>(bytes, out var ret)) {
+            return ret;
         }
-        Span<byte> new_block = stackalloc byte[Unsafe.SizeOf<TTo>()];
 
-        ref var src = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<TStruct, byte>(span));
-        ref var dst = ref MemoryMarshal.GetReference(new_block);
-
-        for (int i = 0; i < Unsafe.SizeOf<TTo>(); ++i)
-            Unsafe.Add(ref dst, i) = Unsafe.Add(ref src, i);
-
-        return MemoryMarshal.Read<TTo>(new_block);
+        Span<byte> new_span = stackalloc byte[Unsafe.SizeOf<TTo>()];
+        bytes.CopyTo(new_span);
+        return MemoryMarshal.Read<TTo>(new_span);
     }
+
     /// <summary>
     /// <code>
     /// Reinterpret Cast of a struct to another struct,
     /// The size of the final struct must be lesser or equal to that of the initial one
     /// </code>
     /// </summary>
-    /// <typeparam name="TStruct"></typeparam>
+    /// <typeparam name="TFrom"></typeparam>
     /// <typeparam name="TTo"></typeparam>
-    /// <param name="value"></param>
+    /// <param name="reference"></param>
     /// <returns></returns>
     /// <exception cref="InvalidCastException"></exception>
-    public static ref TTo Cast<TStruct, TTo>(ref TStruct value)
-    where TStruct : struct
-    where TTo : struct
+    public static ref TTo Cast<TFrom, TTo>(ref TFrom reference)
+        where TFrom : struct
+        where TTo : struct
     {
-        if (Unsafe.SizeOf<TStruct>() >= Unsafe.SizeOf<TTo>())
-            return ref Unsafe.As<TStruct, TTo>(ref value);
+        if (Unsafe.SizeOf<TTo>() >= Unsafe.SizeOf<TFrom>())
+            throw new InvalidCastException("Cannot cast to a larger struct");
 
-        throw new InvalidCastException("Cannot cast to a larger struct");
+        return ref Unsafe.As<TFrom, TTo>(ref reference);
     }
+
     /// <summary>
     /// <code>
     /// Reinterpret Cast of a span of structs to a struct,
     /// The size of the final struct must be lesser or equal to that of the initial span
     /// </code>
     /// </summary>
-    /// <typeparam name="TStruct"></typeparam>
     /// <typeparam name="TTo"></typeparam>
-    /// <param name="value"></param>
+    /// <typeparam name="TFrom"></typeparam>
     /// <returns></returns>
     /// <exception cref="InvalidCastException"></exception>
     public static ref TTo Cast<TFrom, TTo>(Span<TFrom> span)
-    where TFrom : struct
-    where TTo : struct
+        where TFrom : struct
+        where TTo : struct
     {
-        if (span.Length * Unsafe.SizeOf<TFrom>() >= Unsafe.SizeOf<TTo>())
-        {
-            ref var value = ref MemoryMarshal.GetReference(span);
-            return ref Unsafe.As<TFrom, TTo>(ref value);
-        }
-        throw new InvalidCastException("Casting to a larger struct, would cause an out of bounds access");
+        if (Unsafe.SizeOf<TTo>() >= span.Length * Unsafe.SizeOf<TFrom>())
+            throw new InvalidCastException("Cannot cast to a larger struct");
+
+        var bytes = MemoryMarshal.AsBytes(span);
+        return ref MemoryMarshal.AsRef<TTo>(bytes);
     }
+
     /// <summary>
     /// Reinterpret Cast of a struct to a span of another struct
     /// </summary>
@@ -119,40 +119,75 @@ public static class StructMarshal
     /// <param name="value"></param>
     /// <returns></returns>
     public static Span<TTo> AsSpan<TStruct, TTo>(ref TStruct value)
-    where TStruct : struct
-    where TTo : struct
+        where TStruct : struct
+        where TTo : struct
     {
         var span = MemoryMarshal.CreateSpan(ref value, 1);
         return MemoryMarshal.Cast<TStruct, TTo>(span);
     }
+
     /// <summary>
     /// Reinterpret Cast of a struct to a span of another struct
     /// </summary>
     /// <typeparam name="TStruct"></typeparam>
     /// <typeparam name="TTo"></typeparam>
     /// <param name="value"></param>
+    /// <param name="length"></param>
     /// <returns></returns>
     public static Span<TTo> AsSpan<TStruct, TTo>(ref TStruct value, int length)
-    where TStruct : struct
-    where TTo : struct
+        where TStruct : struct
+        where TTo : struct
     {
         var span = MemoryMarshal.CreateSpan(ref value, 1);
         return MemoryMarshal.Cast<TStruct, TTo>(span).Slice(0, length);
     }
+
     /// <summary>
     /// Reinterpret Cast of a struct to a span of another struct
     /// </summary>
     /// <typeparam name="TStruct"></typeparam>
     /// <typeparam name="TTo"></typeparam>
     /// <param name="value"></param>
+    /// <param name="start"></param>
+    /// <param name="lenght"></param>
     /// <returns></returns>
     public static Span<TTo> AsSpan<TStruct, TTo>(ref TStruct value, int start, int lenght)
-    where TStruct : struct
-    where TTo : struct
+        where TStruct : struct
+        where TTo : struct
     {
         var span = MemoryMarshal.CreateSpan(ref value, 1);
         return MemoryMarshal.Cast<TStruct, TTo>(span).Slice(start, lenght);
     }
 }
 
+[PublicAPI]
+public ref struct ReinterpretCastExpression<TStruct>
+    where TStruct : struct
+{
+    public ReinterpretCastExpression(ref TStruct self)
+    {
+        _reference = ref self;
+    }
 
+    public ReinterpretCastExpression()
+    {
+        _reference = Unsafe.NullRef<TStruct>();
+    }
+
+    ref TStruct _reference;
+
+    public ref    TTo        AsRef<TTo>() where TTo : struct => ref StructMarshal.Cast<TStruct, TTo>(ref _reference);
+    public        Span<TTo>  AsSpan<TTo>() where TTo : struct => StructMarshal.AsSpan<TStruct, TTo>(ref _reference);
+    public        TTo        As<TTo>() where TTo : struct => StructMarshal.Read<TStruct, TTo>(ref _reference);
+    public unsafe void*      AsPointer => Unsafe.AsPointer(ref _reference);
+    public        Span<byte> AsBytes => StructMarshal.AsBytes(ref _reference);
+}
+
+public static class Reinterpret
+{
+    public static ReinterpretCastExpression<TStruct> Cast<TStruct>(ref TStruct structure)
+        where TStruct : unmanaged
+    {
+        return new ReinterpretCastExpression<TStruct>(ref structure);
+    }
+}
