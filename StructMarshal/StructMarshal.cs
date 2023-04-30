@@ -164,9 +164,9 @@ public static class StructMarshal
 public ref struct ReinterpretCastExpression<TStruct>
     where TStruct : struct
 {
-    public ReinterpretCastExpression(ref TStruct self)
+    public ReinterpretCastExpression(in TStruct self)
     {
-        _reference = ref self;
+        _reference = ref Unsafe.AsRef(self);
     }
 
     public ReinterpretCastExpression()
@@ -185,9 +185,9 @@ public ref struct ReinterpretCastExpression<TStruct>
 
 public static class Reinterpret
 {
-    public static ReinterpretCastExpression<TStruct> Cast<TStruct>(ref TStruct structure)
+    public static ReinterpretCastExpression<TStruct> Cast<TStruct>(in TStruct structure)
         where TStruct : unmanaged
     {
-        return new ReinterpretCastExpression<TStruct>(ref structure);
+        return new ReinterpretCastExpression<TStruct>(structure);
     }
 }

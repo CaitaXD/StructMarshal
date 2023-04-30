@@ -95,7 +95,7 @@ namespace StructMarshalTests
         {
             var v4 = new Vector4(1, 2, 3, 4);
 
-            var v2 = Reinterpret.Cast(ref v4).As<Vector2>();
+            var v2 = Reinterpret.Cast(v4).As<Vector2>();
         }
     }
 }
