@@ -1,12 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
-using Newtonsoft.Json.Linq;
-using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text.Json;
 using StructMarshal;
 
 namespace StructMarshalTests
@@ -84,10 +79,12 @@ namespace StructMarshalTests
 
             Span<float> floats = stackalloc float[] { 1, 2 };
 
-            try {
+            try
+            {
                 StructMarshal.StructMarshal.Cast<float, Vector4>(floats);
             }
-            catch (InvalidCastException) {
+            catch (InvalidCastException)
+            {
                 Assert.Pass();
             }
 
@@ -105,8 +102,9 @@ namespace StructMarshalTests
             Assert.Throws<InvalidCastException>(() => Reinterpret.Cast(v2).AsPointer<Vector4>());
             Assert.DoesNotThrow(() => Reinterpret.Cast(v2).AsSpan<Vector4>().ToArray());
             Assert.That(Reinterpret.Cast(v2).AsSpan<Vector4>().ToArray(), Has.Length.EqualTo(0));
+            Assert.That(Reinterpret.Cast(v2).AsBytes.ToArray(), Has.Length.EqualTo(2 * sizeof(float)));
 
-            Assert.That(Reinterpret.Cast(v2).As<Vector4>().Equals(new Vector4(1,2,0,0)));
+            Assert.That(Reinterpret.Cast(v2).As<Vector4>().Equals(new Vector4(1, 2, 0, 0)));
             Assert.That(Reinterpret.Cast(v2).AsPointer<float>()->Equals(1));
             Assert.That(Reinterpret.Cast(v2).AsRef<float>().Equals(1));
         }
