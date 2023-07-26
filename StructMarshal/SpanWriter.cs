@@ -1,4 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using static System.Runtime.CompilerServices.MethodImplOptions;
 
 namespace StructMarshal;
 public ref struct SpanWriter
@@ -11,7 +13,23 @@ public ref struct SpanWriter
         _span = span;
         _position = 0;
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
+    public static SpanWriter CreateWriter<T>(Span<T> span)
+        where T : unmanaged
+    {
+        var size = Unsafe.SizeOf<T>();
+        var dest = MemoryMarshal.Cast<T, byte>(span);
+        return new SpanWriter(dest);
+    }
+    public static SpanWriter CreateWriter<T>(T[] span)
+        where T : unmanaged
+    {
+        var size = Unsafe.SizeOf<T>();
+        var dest = MemoryMarshal.Cast<T, byte>(span);
+        return new SpanWriter(dest);
+    }
+    
+    [MethodImpl(AggressiveInlining)]
     public void Write<T>(T value)
         where T : unmanaged
     {
@@ -20,7 +38,7 @@ public ref struct SpanWriter
         StructMarshal.Bytes(ref value).CopyTo(dest);
         _position += size;
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(AggressiveInlining)]
     public void Write<T>(T[] values)
         where T : unmanaged
     {
@@ -29,7 +47,7 @@ public ref struct SpanWriter
         StructMarshal.Bytes(values).CopyTo(dest);
         _position += size * values.Length;
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(AggressiveInlining)]
     public void Write<T>(Span<T> values)
         where T : unmanaged
     {
@@ -38,7 +56,7 @@ public ref struct SpanWriter
         StructMarshal.Bytes(values).CopyTo(dest);
         _position += size * values.Length;
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(AggressiveInlining)]
     public void Write<T>(Memory<T> values)
         where T : unmanaged
     {
@@ -47,7 +65,7 @@ public ref struct SpanWriter
         StructMarshal.Bytes(values.Span).CopyTo(dest);
         _position += size * values.Length;
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(AggressiveInlining)]
     public void Seek(SeekOrigin origin, int offset)
     {
         if ((uint)_position > _span.Length) {
@@ -69,9 +87,9 @@ public ref struct SpanWriter
     }
     public int Position
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(AggressiveInlining)]
         get => _position;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(AggressiveInlining)]
         set
         {
             if ((uint)value > _span.Length) {
