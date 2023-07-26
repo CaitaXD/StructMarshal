@@ -2,8 +2,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StructMarshal", "StructMarshal\StructMarshal.csproj", "{9FE254A4-1EC8-48E1-BC0A-1C917EF3517F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StructMarshalTests", "StructMarshalTests\StructMarshalTests.csproj", "{6374AE41-FD0A-4959-AD35-45295A751809}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,9 +12,5 @@ Global
 		{9FE254A4-1EC8-48E1-BC0A-1C917EF3517F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9FE254A4-1EC8-48E1-BC0A-1C917EF3517F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9FE254A4-1EC8-48E1-BC0A-1C917EF3517F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6374AE41-FD0A-4959-AD35-45295A751809}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6374AE41-FD0A-4959-AD35-45295A751809}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6374AE41-FD0A-4959-AD35-45295A751809}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6374AE41-FD0A-4959-AD35-45295A751809}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
