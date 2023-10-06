@@ -2,9 +2,9 @@
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 
-namespace StructConverter;
+namespace StructMarshal;
 
-[PublicAPI] public static class StructMarshal
+[PublicAPI] public static class ReinterpretCast
 {
     /// <summary>
     /// Reinterprets the given Struct as a Span of bytes.
