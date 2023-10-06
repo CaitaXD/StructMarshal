@@ -2,9 +2,9 @@
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 
-namespace StructMarshal;
+namespace StructConverter;
 
-public static class StructMarshal
+[PublicAPI] public static class StructMarshal
 {
     /// <summary>
     /// Reinterprets the given Struct as a Span of bytes.
@@ -39,9 +39,9 @@ public static class StructMarshal
             return ret;
         }
 
-        Span<byte> new_span = stackalloc byte[Unsafe.SizeOf<TTo>()];
-        bytes.CopyTo(new_span);
-        return MemoryMarshal.Read<TTo>(new_span);
+        Span<byte> newSpan = stackalloc byte[Unsafe.SizeOf<TTo>()];
+        bytes.CopyTo(newSpan);
+        return MemoryMarshal.Read<TTo>(newSpan);
     }
 
     /// <summary>
@@ -64,9 +64,9 @@ public static class StructMarshal
             return ret;
         }
 
-        Span<byte> new_span = stackalloc byte[Unsafe.SizeOf<TTo>()];
-        bytes.CopyTo(new_span);
-        return MemoryMarshal.Read<TTo>(new_span);
+        Span<byte> newSpan = stackalloc byte[Unsafe.SizeOf<TTo>()];
+        bytes.CopyTo(newSpan);
+        return MemoryMarshal.Read<TTo>(newSpan);
     }
 
     /// <summary>
@@ -84,8 +84,7 @@ public static class StructMarshal
         where TFrom : struct
         where TTo : struct
     {
-        if (Unsafe.SizeOf<TTo>() > Unsafe.SizeOf<TFrom>())
-            throw new InvalidCastException("Cannot cast to a larger struct");
+        if (Unsafe.SizeOf<TTo>() > Unsafe.SizeOf<TFrom>()) throw new InvalidCastException("Cannot cast to a larger struct");
 
         return ref Unsafe.As<TFrom, TTo>(ref reference);
     }
@@ -104,8 +103,7 @@ public static class StructMarshal
         where TFrom : struct
         where TTo : struct
     {
-        if (Unsafe.SizeOf<TTo>() > span.Length * Unsafe.SizeOf<TFrom>())
-            throw new InvalidCastException("Cannot cast to a larger struct");
+        if (Unsafe.SizeOf<TTo>() > span.Length * Unsafe.SizeOf<TFrom>()) throw new InvalidCastException("Cannot cast to a larger struct");
 
         var bytes = MemoryMarshal.AsBytes(span);
         return ref MemoryMarshal.AsRef<TTo>(bytes);
@@ -160,40 +158,11 @@ public static class StructMarshal
     }
 
     public static unsafe TTo* AsPointer<TFrom, TTo>(ref TFrom from)
-    where TTo : unmanaged
-    where TFrom : struct
+        where TTo : unmanaged
+        where TFrom : struct
     {
-        if (Unsafe.SizeOf<TTo>() > Unsafe.SizeOf<TFrom>())
-            throw new InvalidCastException();
+        if (Unsafe.SizeOf<TTo>() > Unsafe.SizeOf<TFrom>()) throw new InvalidCastException();
 
         return (TTo*)Unsafe.AsPointer(ref from);
-    }
-}
-
-[PublicAPI]
-public ref struct ReinterpretCastDecorator<TStruct>
-    where TStruct : struct
-{
-    public ReinterpretCastDecorator(in TStruct self)
-    {
-        _reference = ref Unsafe.AsRef(self);
-    }
-
-    ref TStruct _reference;
-
-    public ref    TTo        AsRef<TTo>() where TTo : struct => ref StructMarshal.Cast<TStruct, TTo>(ref _reference);
-    public        Span<TTo>  AsSpan<TTo>() where TTo : struct => StructMarshal.AsSpan<TStruct, TTo>(ref _reference);
-    public        TTo        As<TTo>() where TTo : struct => StructMarshal.Read<TStruct, TTo>(ref _reference);
-    public unsafe TTo*       AsPointer<TTo>() where TTo : unmanaged => StructMarshal.AsPointer<TStruct,TTo>(ref _reference);
-    public unsafe void*      Pointer => Unsafe.AsPointer(ref _reference);
-    public        Span<byte> AsBytes => StructMarshal.AsBytes(ref _reference);
-}
-
-public static class Reinterpret
-{
-    public static ReinterpretCastDecorator<TStruct> Cast<TStruct>(in TStruct structure)
-        where TStruct : unmanaged
-    {
-        return new ReinterpretCastDecorator<TStruct>(structure);
     }
 }
